@@ -52,5 +52,5 @@ Para configurar as credenciais de cliente OAuth do Google, siga os passos abaixo
 1. Clone o repositório para o seu ambiente local:
 
    ```bash
-   git clone https://github.com/seu-usuario/seu-repositorio.git
+   git clone https://github.com/YesIAmJustLearner/php-login-com-google.git
    cd seu-repositorio
