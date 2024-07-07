@@ -11,6 +11,7 @@ class OAuthGoogle
 
     public function __construct($idCliente, $segredoCliente, $uriRedirecionamento = null)
     {
+
         $this->idCliente = $idCliente;
         $this->segredoCliente = $segredoCliente;
         if ($uriRedirecionamento === null) {
@@ -20,16 +21,22 @@ class OAuthGoogle
         }
     }
 
-    public function getUrlAutenticacao()
+    public function getUrlAutenticacao($scopes = array())
     {
-        return 'https://accounts.google.com/o/oauth2/auth?' . http_build_query(array(
+        $defaultScopes = array('email', 'profile');
+    
+        $scopes = array_merge($defaultScopes, $scopes);
+    
+        $queryParams = array(
             'client_id' => $this->idCliente,
             'redirect_uri' => $this->uriRedirecionamento,
-            'scope' => 'email profile',
+            'scope' => implode(' ', $scopes),
             'response_type' => 'code'
-        ));
+        );
+    
+        return 'https://accounts.google.com/o/oauth2/auth?' . http_build_query($queryParams);
     }
-
+    
     public function getAccessToken($codigo = null)
     {
         $token = $this->getTokenFromFile();
@@ -46,13 +53,26 @@ class OAuthGoogle
 
             $token = $this->getToken($params);
 
+            $erro = $token['error'] ?? '';
+
+            switch ($erro) {
+                case 'invalid_grant':
+                    header("Location: ./"); 
+                     break;
+                case 'redirect_uri_mismatch':
+                    trigger_error("Erro: URI de redirecionamento não corresponde.", E_USER_ERROR);
+                    break;
+            }
+
+
+
             if ($token && isset($token['access_token'])) {
                 $this->salvarTokenEmArquivo($token);
                 return $token['access_token'];
             }
         }
 
-        return null;
+        return $token;
     }
 
     public function getInfoUsuario($accessToken)
@@ -108,11 +128,6 @@ class OAuthGoogle
         $protocolo = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
         $uriAtual = $protocolo . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
         $partes = parse_url($uriAtual);
-        $query = '';
-        if (!empty($partes['query'])) {
-            parse_str($partes['query'], $query);
-            $query = '?' . http_build_query($query);
-        }
-        return $partes['scheme'] . '://' . $partes['host'] . $partes['path'] . $query;
+        return $partes['scheme'] . '://' . $partes['host'] . $partes['path'] ;
     }
 }
